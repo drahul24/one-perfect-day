@@ -1,25 +1,29 @@
-# One Perfect Day — Smart Input Build
+# One Perfect Day — Smart Input v2.1 Visibility Fix
 
-A Streamlit app that creates one specific, realistic, premium day in any city using exact named places.
+A clean Streamlit app that creates one specific, realistic city day using exact named places.
 
-## What changed in this build
+## What changed in v2.1
 
-The form is now simplified. Users only need to answer:
+- Fixed invisible/white result text on light background.
+- Forced a professional light theme through `.streamlit/config.toml`.
+- Reworked result cards to use Streamlit's native bordered containers instead of fragile split HTML wrappers.
+- Kept the simplified 3-question input flow.
+- Kept destination suitability guardrails for places where normal leisure planning may not be appropriate.
 
-1. City
-2. What kind of day they want
-3. Anything important in one natural-language box
+## Upload to GitHub
 
-Everything else is optional inside an expandable section. The app uses smart defaults and extracts intent from the user's free-text brief.
+Upload/replace these items:
 
-## Files
+- `app.py`
+- `prompts.py`
+- `requirements.txt`
+- `README.md`
+- `.gitignore`
+- `.streamlit/config.toml`
 
-- `app.py` — Streamlit app
-- `prompts.py` — AI instructions
-- `requirements.txt` — Python dependencies
-- `.gitignore` — prevents cache/env files from being uploaded
+Do not upload `__pycache__`, `.env`, or `.pyc` files.
 
-## Streamlit secrets
+## Streamlit Secrets
 
 Add these in Streamlit Cloud → Manage app → Settings → Secrets:
 
@@ -29,14 +33,4 @@ GEMINI_MODEL = "gemini-2.0-flash"
 BUY_ME_A_COFFEE_URL = "https://www.buymeacoffee.com/yourname"
 ```
 
-## Deploy
-
-Upload these files to GitHub:
-
-- `app.py`
-- `prompts.py`
-- `requirements.txt`
-- `README.md`
-- `.gitignore`
-
-Then deploy through Streamlit Community Cloud with `app.py` as the main file.
+Without Gemini, the app runs in demo mode for selected sample cities only.

@@ -226,6 +226,52 @@ st.markdown(
         padding: 0.85rem 1rem;
         color: var(--muted);
     }
+
+
+    /* Streamlit Cloud can inherit a dark theme even when the app uses a light background.
+       These overrides keep the interface readable and professional. */
+    .stApp, .stApp p, .stApp li, .stApp span, .stApp label,
+    [data-testid="stMarkdownContainer"], [data-testid="stMarkdownContainer"] * {
+        color: #111827 !important;
+    }
+    .hero, .hero *, .pill, .pill * {
+        color: #ffffff !important;
+    }
+    .muted, .muted * {
+        color: #667085 !important;
+    }
+    .eyebrow, .eyebrow * {
+        color: #667085 !important;
+    }
+    .section-card, .section-card *, .mini-card, .mini-card *, .notice-card, .notice-card *, .map-box, .map-box * {
+        color: #111827 !important;
+    }
+    .notice-card {
+        background: #ffffff !important;
+    }
+    .safety-card, .safety-card * {
+        color: #7c2d12 !important;
+    }
+    .safety-card h3 {
+        color: #9a3412 !important;
+    }
+    .stTextInput input, .stTextArea textarea, .stSelectbox div, .stMultiSelect div {
+        color: #111827 !important;
+        background-color: #ffffff !important;
+    }
+    .stTextInput input::placeholder, .stTextArea textarea::placeholder {
+        color: #98a2b3 !important;
+        opacity: 1 !important;
+    }
+    .stTabs [data-baseweb="tab"] p, .stTabs [data-baseweb="tab"] span {
+        color: #344054 !important;
+    }
+    .stTabs [aria-selected="true"] p, .stTabs [aria-selected="true"] span {
+        color: #111827 !important;
+    }
+    [data-testid="stAlert"], [data-testid="stAlert"] * {
+        color: #111827 !important;
+    }
     </style>
     """,
     unsafe_allow_html=True,
@@ -980,21 +1026,17 @@ def parse_sections(plan: str) -> Dict[str, str]:
 
 
 def render_markdown_card(title: str, content: str, eyebrow: str = "") -> None:
-    prefix = f'<div class="eyebrow">{eyebrow}</div>' if eyebrow else ""
-    st.markdown(
-        f'<div class="section-card">{prefix}<h3>{title}</h3></div>',
-        unsafe_allow_html=True,
-    )
-    # render content right after for native markdown support
-    container = st.container()
-    with container:
-        st.markdown(
-            f'<div class="section-card" style="margin-top:-0.55rem;">',
-            unsafe_allow_html=True,
-        )
-        st.markdown(content)
-        st.markdown('</div>', unsafe_allow_html=True)
+    """Render a clean readable card without split open/close HTML blocks.
 
+    Streamlit does not reliably keep custom HTML containers open across
+    separate st.markdown calls. Using bordered native containers avoids the
+    invisible-text bug seen when a dark Streamlit theme meets a light custom UI.
+    """
+    with st.container(border=True):
+        if eyebrow:
+            st.markdown(f'<div class="eyebrow">{eyebrow}</div>', unsafe_allow_html=True)
+        st.markdown(f"### {title}")
+        st.markdown(content or "Not available.")
 
 def render_results(city: str, plan: str) -> None:
     if plan.startswith("__DESTINATION_PAUSE__"):
@@ -1020,13 +1062,19 @@ def render_results(city: str, plan: str) -> None:
 
     top1, top2, top3 = st.columns([1.2, 1, 1])
     with top1:
-        st.markdown('<div class="mini-card"><div class="eyebrow">Summary</div>', unsafe_allow_html=True)
-        st.markdown(summary or "A polished one-day plan is ready below.")
-        st.markdown('</div>', unsafe_allow_html=True)
+        with st.container(border=True):
+            st.markdown('<div class="eyebrow">Summary</div>', unsafe_allow_html=True)
+            st.markdown(summary or "A polished one-day plan is ready below.")
     with top2:
-        st.markdown('<div class="mini-card"><div class="eyebrow">Output quality</div><h3>Specific route</h3><p class="muted">The result is structured around exact places and practical pacing.</p></div>', unsafe_allow_html=True)
+        with st.container(border=True):
+            st.markdown('<div class="eyebrow">Output quality</div>', unsafe_allow_html=True)
+            st.markdown("### Specific route")
+            st.markdown("The result is structured around exact places and practical pacing.")
     with top3:
-        st.markdown('<div class="mini-card"><div class="eyebrow">Use this next</div><h3>Copy into maps</h3><p class="muted">Use the map-ready list tab to quickly create your route in Google Maps or Apple Maps.</p></div>', unsafe_allow_html=True)
+        with st.container(border=True):
+            st.markdown('<div class="eyebrow">Use this next</div>', unsafe_allow_html=True)
+            st.markdown("### Copy into maps")
+            st.markdown("Use the map-ready list tab to quickly create your route in Google Maps or Apple Maps.")
 
     tabs = st.tabs(["Timeline", "Route Logic", "Food & Photos", "Backup Plan", "Map List", "Full Plan"])
 
@@ -1049,15 +1097,14 @@ def render_results(city: str, plan: str) -> None:
         render_markdown_card("Backup plan", backup or "No backup plan available.", "If the day changes")
 
     with tabs[4]:
-        st.markdown('<div class="section-card"><div class="eyebrow">Copy list</div><h3>Map-ready place list</h3><div class="map-box">', unsafe_allow_html=True)
-        st.markdown(map_list or "No map-ready list available.")
-        st.markdown('</div></div>', unsafe_allow_html=True)
+        with st.container(border=True):
+            st.markdown('<div class="eyebrow">Copy list</div>', unsafe_allow_html=True)
+            st.markdown("### Map-ready place list")
+            st.markdown(map_list or "No map-ready list available.")
 
     with tabs[5]:
-        st.markdown('<div class="section-card">', unsafe_allow_html=True)
-        st.markdown(plan)
-        st.markdown('</div>', unsafe_allow_html=True)
-
+        with st.container(border=True):
+            st.markdown(plan)
 
 def main() -> None:
     render_header()
