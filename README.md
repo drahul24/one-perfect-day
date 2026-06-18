@@ -1,31 +1,40 @@
-# One Perfect Day — Smart Input v2.1 Visibility Fix
+# One Perfect Day — v2.2 No Empty Results
 
-A clean Streamlit app that creates one specific, realistic city day using exact named places.
+A simplified Streamlit travel app that creates one realistic day in a city using exact named places, food stops, photo moments, backup plans and a map-ready list.
 
-## What changed in v2.1
+## What changed in v2.2
 
-- Fixed invisible/white result text on light background.
-- Forced a professional light theme through `.streamlit/config.toml`.
-- Reworked result cards to use Streamlit's native bordered containers instead of fragile split HTML wrappers.
-- Kept the simplified 3-question input flow.
-- Kept destination suitability guardrails for places where normal leisure planning may not be appropriate.
+- No more empty output when Gemini is not configured.
+- Built-in professional fallback plans for Delhi, Tokyo, Paris and London.
+- Clean three-question input.
+- Professional light UI.
+- Destination suitability gate for restricted/high-risk destinations.
+- Clear message when using built-in fallback vs AI mode.
 
-## Upload to GitHub
+## Files
 
-Upload/replace these items:
+Upload these to GitHub:
 
-- `app.py`
-- `prompts.py`
-- `requirements.txt`
-- `README.md`
-- `.gitignore`
-- `.streamlit/config.toml`
+```text
+app.py
+prompts.py
+requirements.txt
+README.md
+.gitignore
+.streamlit/config.toml
+```
 
-Do not upload `__pycache__`, `.env`, or `.pyc` files.
+Do not upload:
+
+```text
+*.pyc
+__pycache__
+.env
+```
 
 ## Streamlit Secrets
 
-Add these in Streamlit Cloud → Manage app → Settings → Secrets:
+Optional but recommended for global city coverage:
 
 ```toml
 GEMINI_API_KEY = "paste_your_key_here"
@@ -33,4 +42,11 @@ GEMINI_MODEL = "gemini-2.0-flash"
 BUY_ME_A_COFFEE_URL = "https://www.buymeacoffee.com/yourname"
 ```
 
-Without Gemini, the app runs in demo mode for selected sample cities only.
+## Deploy
+
+Main file path:
+
+```text
+app.py
+```
+
