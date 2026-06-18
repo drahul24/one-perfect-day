@@ -1,39 +1,27 @@
-# One Perfect Day — Professional UI + Destination Suitability Gate
+# One Perfect Day — Smart Input Build
 
-A Streamlit app that creates a polished, specific one-day plan in any city with exact named places, food stops, photo moments, backup options, and a map-ready list.
+A Streamlit app that creates one specific, realistic, premium day in any city using exact named places.
 
-This version adds a destination suitability gate. If a destination appears to be under a do-not-travel style advisory or has highly restricted tourism access, the app pauses the leisure itinerary and gives a safer message instead of forcing a normal day plan.
+## What changed in this build
+
+The form is now simplified. Users only need to answer:
+
+1. City
+2. What kind of day they want
+3. Anything important in one natural-language box
+
+Everything else is optional inside an expandable section. The app uses smart defaults and extracts intent from the user's free-text brief.
 
 ## Files
 
-- `app.py` — Streamlit app with professional UI and destination suitability gate
-- `prompts.py` — Gemini prompt rules
-- `requirements.txt` — dependencies
-- `.gitignore` — avoids cache/env files
+- `app.py` — Streamlit app
+- `prompts.py` — AI instructions
+- `requirements.txt` — Python dependencies
+- `.gitignore` — prevents cache/env files from being uploaded
 
-## Deploy
+## Streamlit secrets
 
-Upload these files to GitHub:
-
-```text
-app.py
-prompts.py
-requirements.txt
-README.md
-.gitignore
-```
-
-Do not upload:
-
-```text
-__pycache__
-*.pyc
-.env
-```
-
-## Streamlit Secrets
-
-Add this for global exact-place planning:
+Add these in Streamlit Cloud → Manage app → Settings → Secrets:
 
 ```toml
 GEMINI_API_KEY = "paste_your_key_here"
@@ -41,6 +29,14 @@ GEMINI_MODEL = "gemini-2.0-flash"
 BUY_ME_A_COFFEE_URL = "https://www.buymeacoffee.com/yourname"
 ```
 
-## Safety behavior
+## Deploy
 
-The app does not show a public risk score. It simply pauses leisure planning for destinations where a normal tourism itinerary may be inappropriate. It uses a controlled fallback list and a best-effort official advisory check. It does not replace official government travel advice.
+Upload these files to GitHub:
+
+- `app.py`
+- `prompts.py`
+- `requirements.txt`
+- `README.md`
+- `.gitignore`
+
+Then deploy through Streamlit Community Cloud with `app.py` as the main file.

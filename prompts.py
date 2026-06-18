@@ -51,6 +51,7 @@ USER_PROMPT_TEMPLATE = """
 Create one perfect day using the details below.
 
 City: {city}
+User free-text brief: {user_brief}
 Country / destination country: {country}
 Date or month: {date_or_month}
 Start time: {start_time}
@@ -68,7 +69,7 @@ Mobility notes: {mobility_notes}
 Weather context: {weather_context}
 Special occasion: {special_occasion}
 
-Important: Give exact named places. Do not say vague things like "shopping street", "museum", "cultural area", "restaurant", "park", or "market" unless you name the exact one.
+Important: The user may have provided most details in the free-text brief. Extract intent from it. Give exact named places. Do not say vague things like "shopping street", "museum", "cultural area", "restaurant", "park", or "market" unless you name the exact one.
 """
 
 REFINEMENT_PROMPT = """

@@ -718,13 +718,13 @@ def render_header() -> None:
         <div class="hero">
             <h1>{APP_TITLE}</h1>
             <div class="hero-subtitle">{APP_SUBTITLE}</div>
-            <div class="hero-small">A polished city-day planner that creates realistic routes with exact named places — and pauses leisure itineraries for destinations where travel may not be appropriate.</div>
+            <div class="hero-small">A polished city-day planner that creates realistic routes with exact named places. Just enter the city, choose your vibe, and add anything important in one sentence.</div>
             <div class="pill-wrap">
                 <span class="pill">Specific named places</span>
                 <span class="pill">Professional layout</span>
                 <span class="pill">Map-ready list</span>
                 <span class="pill">Backup options</span>
-                <span class="pill">Destination availability check</span>
+                <span class="pill">Simple 3-step input</span>
             </div>
         </div>
         """,
@@ -769,77 +769,170 @@ def render_feature_cards() -> None:
         )
 
 
-def collect_inputs() -> Dict[str, str]:
-    with st.form("perfect_day_form"):
-        st.markdown("### Plan inputs")
-        left, right = st.columns([1, 1])
-        with left:
-            city = st.text_input("City *", placeholder="Tokyo, Paris, Bangkok, London, Dubai...")
-            country = st.text_input("Country / destination country", placeholder="Japan, France, Thailand, United Kingdom...")
-            date_or_month = st.text_input("Date or month", placeholder="April, 12 July, winter, this weekend...")
-            c1, c2 = st.columns(2)
-            with c1:
-                start_time = st.text_input("Start time", value="10:00 AM")
-            with c2:
-                end_time = st.text_input("End time", value="9:00 PM")
-            travel_styles = st.multiselect(
-                "Travel style",
-                [
-                    "Culture",
-                    "Food",
-                    "Photography",
-                    "Shopping",
-                    "Luxury",
-                    "Budget",
-                    "Romantic",
-                    "Family-friendly",
-                    "Hidden gems",
-                    "Relaxed",
-                    "Iconic landmarks",
-                    "Nature/parks",
-                    "Night views",
-                ],
-                default=["Culture", "Food", "Photography", "Relaxed"],
-            )
-            budget_level = st.selectbox("Budget level", ["Budget", "Medium", "Premium", "Luxury"], index=1)
-            food_preference = st.text_input("Food preference", placeholder="Vegetarian, halal, vegan, seafood, street food, no pork...")
-        with right:
-            energy_level = st.selectbox("Energy level", ["Low", "Moderate", "High"], index=1)
-            travelling_with = st.selectbox("Travelling with", ["Solo", "Couple", "Friends", "Family", "Business traveler", "Parents/kids"], index=0)
-            starting_area = st.text_input("Starting area / hotel area", placeholder="Shinjuku, Eiffel Tower area, Marina Bay, Sukhumvit...")
-            ending_area = st.text_input("Ending area", placeholder="Same as hotel, airport, station, dinner area...")
-            special_occasion = st.text_input("Special occasion", placeholder="Birthday, anniversary, proposal, first solo trip...")
-            weather_context = st.text_input("Weather context", placeholder="Rainy, very hot, cold, snow, unknown...")
+def _infer_budget(text: str) -> str:
+    low = text.lower()
+    if any(w in low for w in ["luxury", "5 star", "five star", "premium", "fine dining", "splurge"]):
+        return "Premium"
+    if any(w in low for w in ["budget", "cheap", "low cost", "backpacker", "free"]):
+        return "Budget"
+    return "Medium"
 
-        st.markdown("### Optional preferences")
-        o1, o2 = st.columns(2)
-        with o1:
-            must_include = st.text_area("Must include", placeholder="A famous viewpoint, vegetarian lunch, luxury shopping, one museum...", height=90)
-        with o2:
-            avoid = st.text_area("Avoid", placeholder="Nightlife, heavy walking, crowded areas, expensive restaurants...", height=90)
-        mobility_notes = st.text_input("Mobility notes", placeholder="No stairs, stroller, elderly parent, limited walking...")
+
+def _infer_food(text: str) -> str:
+    low = text.lower()
+    food_terms = [
+        "vegetarian", "vegan", "halal", "kosher", "jain", "seafood", "street food", "no pork",
+        "no beef", "gluten", "indian food", "local food", "fine dining", "cafe", "coffee"
+    ]
+    found = [term for term in food_terms if term in low]
+    return ", ".join(found) if found else "No specific restriction"
+
+
+def _infer_energy(text: str) -> str:
+    low = text.lower()
+    if any(w in low for w in ["relaxed", "slow", "easy", "light", "elderly", "kids", "low walking", "less walking"]):
+        return "Low"
+    if any(w in low for w in ["packed", "high energy", "adventure", "lots", "maximum", "intense"]):
+        return "High"
+    return "Moderate"
+
+
+def _infer_travelling_with(text: str) -> str:
+    low = text.lower()
+    if any(w in low for w in ["wife", "husband", "partner", "girlfriend", "boyfriend", "anniversary", "romantic", "couple"]):
+        return "Couple"
+    if any(w in low for w in ["kids", "children", "child", "parents", "family"]):
+        return "Family"
+    if any(w in low for w in ["friends", "group"]):
+        return "Friends"
+    if any(w in low for w in ["business", "work trip", "conference"]):
+        return "Business traveler"
+    return "Solo"
+
+
+def _infer_times(text: str) -> Tuple[str, str]:
+    # Best effort only. The full free-text brief is still sent to the model.
+    low = text.lower()
+    times = re.findall(r"(?:[01]?\d|2[0-3])(?::[0-5]\d)?\s*(?:am|pm)?", low)
+    clean = [t.upper().replace(" ", "") for t in times if not re.fullmatch(r"\d{1,2}", t)]
+    if len(clean) >= 2:
+        return clean[0], clean[1]
+    if "morning" in low and "evening" in low:
+        return "10:00 AM", "8:00 PM"
+    if "half day" in low:
+        return "10:00 AM", "4:00 PM"
+    return "10:00 AM", "9:00 PM"
+
+
+def _infer_month_or_date(text: str) -> str:
+    month_match = re.search(r"(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|sept|oct|nov|dec)", text.lower())
+    if month_match:
+        return month_match.group(0).title()
+    for phrase in ["today", "tomorrow", "this weekend", "next weekend", "winter", "summer", "spring", "autumn", "fall", "rainy season"]:
+        if phrase in text.lower():
+            return phrase
+    return "Not specified"
+
+
+def collect_inputs() -> Dict[str, str]:
+    st.markdown(
+        """
+        <div class="notice-card">
+            <strong>Keep it simple:</strong> enter the city, choose the vibe, and optionally write everything else in one natural sentence. You do not need to fill a long form.
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    with st.form("perfect_day_form"):
+        st.markdown("### Create your day")
+        city = st.text_input("1. Which city? *", placeholder="Tokyo, Paris, Bangkok, London, Dubai...")
+
+        travel_styles = st.multiselect(
+            "2. What kind of day do you want?",
+            [
+                "Culture",
+                "Food",
+                "Photography",
+                "Shopping",
+                "Luxury",
+                "Budget",
+                "Romantic",
+                "Family-friendly",
+                "Hidden gems",
+                "Relaxed",
+                "Iconic landmarks",
+                "Nature/parks",
+                "Night views",
+            ],
+            default=["Culture", "Food", "Photography", "Relaxed"],
+            help="Pick 2–5. The app will build a specific route with named places.",
+        )
+
+        user_brief = st.text_area(
+            "3. Anything important?",
+            placeholder=(
+                "Example: 10 AM to 9 PM, vegetarian, medium budget, staying near Shinjuku, "
+                "want culture + food + photos, avoid nightlife and heavy walking."
+            ),
+            height=105,
+            help="Write naturally. Put timings, food, budget, starting area, must-see places, or things to avoid here.",
+        )
+
+        with st.expander("Optional: improve accuracy", expanded=False):
+            c1, c2, c3 = st.columns(3)
+            with c1:
+                country = st.text_input("Country", placeholder="Japan, France, Thailand...")
+                date_or_month = st.text_input("Date / month", placeholder="April, tomorrow, this weekend...")
+                start_time = st.text_input("Start time", placeholder="10:00 AM")
+            with c2:
+                end_time = st.text_input("End time", placeholder="9:00 PM")
+                budget_level = st.selectbox("Budget", ["Auto-detect", "Budget", "Medium", "Premium", "Luxury"], index=0)
+                food_preference = st.text_input("Food preference", placeholder="Vegetarian, halal, vegan, seafood...")
+            with c3:
+                energy_level = st.selectbox("Pace", ["Auto-detect", "Low", "Moderate", "High"], index=0)
+                travelling_with = st.selectbox("Travelling with", ["Auto-detect", "Solo", "Couple", "Friends", "Family", "Business traveler", "Parents/kids"], index=0)
+                weather_context = st.text_input("Weather", placeholder="Rainy, hot, cold, unknown...")
+
+            c4, c5 = st.columns(2)
+            with c4:
+                starting_area = st.text_input("Starting area / hotel area", placeholder="Shinjuku, Eiffel Tower area, Marina Bay...")
+                must_include = st.text_area("Must include", placeholder="Specific places or experiences you really want", height=70)
+            with c5:
+                ending_area = st.text_input("Ending area", placeholder="Hotel, airport, station, dinner area...")
+                avoid = st.text_area("Avoid", placeholder="Crowds, nightlife, stairs, expensive restaurants...", height=70)
+            special_occasion = st.text_input("Special occasion", placeholder="Birthday, anniversary, proposal, first solo trip...")
+            mobility_notes = st.text_input("Mobility notes", placeholder="No stairs, stroller, elderly parent, limited walking...")
 
         submitted = st.form_submit_button("Create my perfect day", use_container_width=True)
+
+    start_auto, end_auto = _infer_times(user_brief)
+    inferred_budget = _infer_budget(user_brief)
+    inferred_food = _infer_food(user_brief)
+    inferred_energy = _infer_energy(user_brief)
+    inferred_travel_with = _infer_travelling_with(user_brief)
+    inferred_date = _infer_month_or_date(user_brief)
 
     return {
         "submitted": submitted,
         "city": city.strip(),
         "country": country.strip() or "Not specified",
-        "date_or_month": date_or_month.strip() or "Not specified",
-        "start_time": start_time.strip() or "Not specified",
-        "end_time": end_time.strip() or "Not specified",
-        "travel_styles": ", ".join(travel_styles) if travel_styles else "Not specified",
-        "budget_level": budget_level,
-        "food_preference": food_preference.strip() or "No specific restriction",
-        "energy_level": energy_level,
-        "travelling_with": travelling_with,
-        "starting_area": starting_area.strip() or "Not specified",
+        "date_or_month": date_or_month.strip() or inferred_date,
+        "start_time": start_time.strip() or start_auto,
+        "end_time": end_time.strip() or end_auto,
+        "travel_styles": ", ".join(travel_styles) if travel_styles else "Balanced city day",
+        "budget_level": inferred_budget if budget_level == "Auto-detect" else budget_level,
+        "food_preference": food_preference.strip() or inferred_food,
+        "energy_level": inferred_energy if energy_level == "Auto-detect" else energy_level,
+        "travelling_with": inferred_travel_with if travelling_with == "Auto-detect" else travelling_with,
+        "starting_area": starting_area.strip() or "Use the most route-efficient central starting point unless the user brief says otherwise",
         "ending_area": ending_area.strip() or "Not specified",
-        "must_include": must_include.strip() or "Not specified",
-        "avoid": avoid.strip() or "Not specified",
+        "must_include": must_include.strip() or "Infer from the user brief and selected styles",
+        "avoid": avoid.strip() or "Infer from the user brief; otherwise avoid overpacking and unnecessary backtracking",
         "mobility_notes": mobility_notes.strip() or "Not specified",
         "weather_context": weather_context.strip() or "Not specified",
         "special_occasion": special_occasion.strip() or "Not specified",
+        "user_brief": user_brief.strip() or "No extra brief provided",
     }
 
 
